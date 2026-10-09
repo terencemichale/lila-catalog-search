@@ -63,6 +63,10 @@ python -m pytest -q
 
 Tests cover structured-field search, case handling, limits, cache invalidation, caption parsing, HTTP validation, and adapter output. CI runs these checks on Python 3.12.
 
+## Architecture and reliability
+
+Read [architecture and reliability notes](docs/ARCHITECTURE.md) for the request path, complexity, caching assumptions, failure modes, and a clearly labeled **not implemented** scaling design. Additional API boundary tests cover request limits, malformed inputs, and empty-result behavior.
+
 ## Scope and contribution
 
 This is a curated edition of my existing application, with portfolio preparation assisted by AI. The original search logic, caption parsing, thumbnail naming, and browser tester are retained. Cleanup adds synthetic data, portable setup, import safety, documentation, and regression checks. The larger commerce platform, customer data, live integrations, and product photos are excluded.
