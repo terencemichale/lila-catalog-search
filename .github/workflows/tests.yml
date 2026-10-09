@@ -12,3 +12,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
+      - name: Compare JSON and SQLite search (synthetic data)
+        run: |
+          python -m scripts.benchmark_search --rows 1000 --repeats 30
+          python -m scripts.benchmark_search --rows 10000 --repeats 30
