@@ -41,29 +41,26 @@ def initialize_database(db_path: Path, products_path: Path) -> int:
     return len(products)
 
 
-def _escape_like(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
 def search_database(db_path: Path, query: str, limit: int = 3) -> list[dict]:
     needle = query.strip().lower()
     if not needle:
         return []
     if not 1 <= limit <= 10:
         raise ValueError("limit must be between 1 and 10")
-    pattern = "%" + _escape_like(needle) + "%"
     with connect(db_path) as db:
-        if len(needle) >= 3:
+        # SQLite's trigram index can optimize LIKE only without an ESCAPE clause.
+        # SQL wildcard characters use instr() for literal substring semantics.
+        if len(needle) >= 3 and "%" not in needle and "_" not in needle:
             rows = db.execute("""
                 SELECT p.payload FROM product_search AS s
                 JOIN products AS p ON p.id = s.rowid
-                WHERE s.searchable LIKE ? ESCAPE '\\'
+                WHERE s.searchable LIKE ?
                 ORDER BY p.id LIMIT ?
-            """, (pattern, limit)).fetchall()
+            """, ("%" + needle + "%", limit)).fetchall()
         else:
             rows = db.execute("""
                 SELECT payload FROM products
-                WHERE searchable LIKE ? ESCAPE '\\'
+                WHERE instr(searchable, ?) > 0
                 ORDER BY id LIMIT ?
-            """, (pattern, limit)).fetchall()
+            """, (needle, limit)).fetchall()
     return [json.loads(row["payload"]) for row in rows]
