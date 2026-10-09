@@ -1,3 +1,4 @@
+import os
 from threading import Lock
 
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -8,6 +9,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 from pydantic import BaseModel, Field
 
+from backend.sqlite_catalog import search_database
 from catalog_keys import thumbnail_filename_for_product
 from paths import catalog_root
 
@@ -83,7 +85,11 @@ def search_products(query: str, limit: int = 3):
     if not normalized_query:
         return []
 
-    products = load_products()
+    if os.environ.get('LILA_SEARCH_BACKEND', 'json').lower() == 'sqlite':
+        db_path = Path(os.environ.get('LILA_SQLITE_PATH', str(CATALOG_DIR / 'products.sqlite3')))
+        products = search_database(db_path, normalized_query, limit)
+    else:
+        products = load_products()
     query_lower = normalized_query.lower()
     results = []
     for p in products:
