@@ -63,6 +63,29 @@ python -m pytest -q
 
 Tests cover structured-field search, case handling, limits, cache invalidation, caption parsing, HTTP validation, and adapter output. CI runs these checks on Python 3.12.
 
+## SQLite persistence and indexed search (optional)
+
+The existing JSON backend remains the default. SQLite is an **opt-in, explicitly imported snapshot**, not a live synchronization service.
+
+```bash
+python -m scripts.init_sqlite
+# macOS/Linux
+LILA_SEARCH_BACKEND=sqlite python -m uvicorn backend.main:app --host 127.0.0.1 --port 8010
+# PowerShell alternative
+# $env:LILA_SEARCH_BACKEND="sqlite"; python -m uvicorn backend.main:app --host 127.0.0.1 --port 8010
+```
+
+The database uses SQLite FTS5 with a trigram index for literal substring searches of at least three characters. Short queries and SQL wildcard characters use a scan to preserve search semantics. Importing again replaces the snapshot transactionally. SQLite must be built with FTS5 trigram support; otherwise initialization fails rather than silently claiming indexed performance.
+
+### Reproducible benchmark
+
+```bash
+python -m scripts.benchmark_search --rows 10000 --repeats 100
+python -m pytest -q
+```
+
+The benchmark generates **synthetic** records, checks result parity, and reports median per-query latency for JSON scanning versus SQLite search. It includes both indexed and scan-fallback queries. Results vary by machine and workload; no speedup is claimed until measurements are recorded. See [architecture notes](docs/ARCHITECTURE.md).
+
 ## Architecture and reliability
 
 Read [architecture and reliability notes](docs/ARCHITECTURE.md) for the request path, complexity, caching assumptions, failure modes, and a clearly labeled **not implemented** scaling design. Additional API boundary tests cover request limits, malformed inputs, and empty-result behavior.
